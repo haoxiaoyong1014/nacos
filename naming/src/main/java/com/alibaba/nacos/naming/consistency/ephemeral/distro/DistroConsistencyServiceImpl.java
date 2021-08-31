@@ -372,6 +372,7 @@ public class DistroConsistencyServiceImpl implements EphemeralConsistencyService
                 services.put(datumKey, StringUtils.EMPTY);
             }
             //向BlockingQueue中添加数据
+            //Pair java 中的元祖类，有点类似(key,value), https://blog.csdn.net/qq_35006663/article/details/100301416
             tasks.add(Pair.with(datumKey, action));
         }
 
@@ -385,13 +386,13 @@ public class DistroConsistencyServiceImpl implements EphemeralConsistencyService
 
             while (true) {
                 try {
-                    //循环从阻塞队列tasks里拿实例数据处理
+                    //循环从阻塞队列tasks里拿实例数据处理，
                     Pair pair = tasks.take();
 
                     if (pair == null) {
                         continue;
                     }
-                    //在这里放进去的 tasks.add(Pair.with(datumKey, action));
+                    //在这里放进去的 tasks.add(Pair.with(datumKey, action)); --> 就是上面376行放进去的
                     String datumKey = (String) pair.getValue0();
                     ApplyAction action = (ApplyAction) pair.getValue1();
 

@@ -305,6 +305,10 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
                 continue;
             }
 
+            /**
+             *  allInstances.addAll(persistentInstances);
+             *  allInstances.addAll(ephemeralInstances);
+             */
             allIPs.addAll(clusterObj.allIPs());
         }
 

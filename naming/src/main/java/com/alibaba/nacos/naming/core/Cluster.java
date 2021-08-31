@@ -194,7 +194,7 @@ public class Cluster extends com.alibaba.nacos.api.naming.pojo.Cluster implement
             oldIPMap.put(ip.getDatumKey(), ip);
         }
 
-        //
+        //拿到实例集合（老的加新的）合并后的
         List<Instance> updatedIPs = updatedIPs(ips, oldIPMap.values());
 
         if (updatedIPs.size() > 0) {
@@ -243,7 +243,8 @@ public class Cluster extends com.alibaba.nacos.api.naming.pojo.Cluster implement
         }
 
         toUpdateInstances = new HashSet<>(ips);
-
+        //将临时的注册实例更新到了cluster的ephemeralInstances属性上去
+        //服务发现查询临时实例最终从内存里找到这个属性ephemeralInstances
         if (ephemeral) {
             ephemeralInstances = toUpdateInstances;
         } else {

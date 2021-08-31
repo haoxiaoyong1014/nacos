@@ -219,6 +219,7 @@ public class HostReactor {
         return null;
     }
 
+    //获取客户端服务实例缓存信息
     public ServiceInfo getServiceInfo(final String serviceName, final String clusters) {
 
         NAMING_LOGGER.debug("failover-mode: " + failoverReactor.isFailoverSwitch());
@@ -227,6 +228,7 @@ public class HostReactor {
             return failoverReactor.getService(key);
         }
 
+        //获取实例服务缓存信息--> 客户端实例缓存map---->serviceInfoMap
         ServiceInfo serviceObj = getServiceInfo0(serviceName, clusters);
 
         if (null == serviceObj) {
@@ -235,7 +237,9 @@ public class HostReactor {
             serviceInfoMap.put(serviceObj.getKey(), serviceObj);
 
             updatingMap.put(serviceName, new Object());
+            //如果缓存为空，调用server接口获取最新服务数据
             updateServiceNow(serviceName, clusters);
+
             updatingMap.remove(serviceName);
 
         } else if (updatingMap.containsKey(serviceName)) {
@@ -252,6 +256,7 @@ public class HostReactor {
             }
         }
 
+        //延时执行定时任务更新客户端的服务缓存, 10s一次pull请求们，获取最新服务端的地址列表
         scheduleUpdateIfAbsent(serviceName, clusters);
 
         return serviceInfoMap.get(serviceObj.getKey());
@@ -267,6 +272,7 @@ public class HostReactor {
                 return;
             }
 
+            //客户端发起事件订阅后，在HostReactor启动updateTask线程，10s一次pull请求们，获取最新服务端的地址列表
             ScheduledFuture<?> future = addTask(new UpdateTask(serviceName, clusters));
             futureMap.put(ServiceInfo.getKey(serviceName, clusters), future);
         }
@@ -275,7 +281,7 @@ public class HostReactor {
     public void updateServiceNow(String serviceName, String clusters) {
         ServiceInfo oldService = getServiceInfo0(serviceName, clusters);
         try {
-
+            //调用server的服务发现接口 instance/list
             String result = serverProxy.queryList(serviceName, clusters, pushReceiver.getUDPPort(), false);
 
             if (StringUtils.isNotEmpty(result)) {
@@ -316,6 +322,7 @@ public class HostReactor {
                 ServiceInfo serviceObj = serviceInfoMap.get(ServiceInfo.getKey(serviceName, clusters));
 
                 if (serviceObj == null) {
+                    //更新最新的服务列表
                     updateServiceNow(serviceName, clusters);
                     executor.schedule(this, DEFAULT_DELAY, TimeUnit.MILLISECONDS);
                     return;
@@ -329,7 +336,7 @@ public class HostReactor {
                     // since the push data may be different from pull through force push
                     refreshOnly(serviceName, clusters);
                 }
-
+                //10s一次pull请求们，获取最新服务端的地址列表
                 executor.schedule(this, serviceObj.getCacheMillis(), TimeUnit.MILLISECONDS);
 
                 lastRefTime = serviceObj.getLastRefTime();

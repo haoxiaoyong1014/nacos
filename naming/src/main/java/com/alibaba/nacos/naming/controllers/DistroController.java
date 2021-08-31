@@ -60,6 +60,12 @@ public class DistroController {
     @Autowired
     private SwitchDomain switchDomain;
 
+    /**
+     * 同步到其它Nacos Server 上调用了此方法
+     * @param dataMap
+     * @return
+     * @throws Exception
+     */
     @PutMapping("/datum")
     public ResponseEntity onSyncDatum(@RequestBody Map<String, Datum<Instances>> dataMap) throws Exception {
 
@@ -76,6 +82,7 @@ public class DistroController {
                     && switchDomain.isDefaultInstanceEphemeral()) {
                     serviceManager.createEmptyService(namespaceId, serviceName, true);
                 }
+                // 这里是将注册实例更新到内存注册表中
                 consistencyService.onPut(entry.getKey(), entry.getValue().value);
             }
         }

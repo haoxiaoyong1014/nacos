@@ -45,9 +45,11 @@ public class RaftConsistencyServiceImpl implements PersistentConsistencyService 
     @Autowired
     private SwitchDomain switchDomain;
 
+    //持久化实例 CP(强一致性)
     @Override
     public void put(String key, Record value) throws NacosException {
         try {
+            //阿里自己实现的CP模式的简单Raft协议
             raftCore.signalPublish(key, value);
         } catch (Exception e) {
             Loggers.RAFT.error("Raft put failed.", e);

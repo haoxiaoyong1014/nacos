@@ -154,17 +154,19 @@ public class RaftCore {
 
     public void signalPublish(String key, Record value) throws Exception {
 
+        //判断节点是否是leader
         if (!isLeader()) {
             JSONObject params = new JSONObject();
             params.put("key", key);
             params.put("value", value);
             Map<String, String> parameters = new HashMap<>(1);
             parameters.put("key", key);
-
+            // 将注册请求转发到集群的leader节点上
             raftProxy.proxyPostLarge(getLeader().ip, API_PUB, params.toJSONString(), parameters);
             return;
         }
 
+        //如果是Leader节点
         try {
             OPERATE_LOCK.lock();
             long start = System.currentTimeMillis();
@@ -181,16 +183,19 @@ public class RaftCore {
             json.put("datum", datum);
             json.put("source", peers.local());
 
+            //更新注册实例数据到内存和磁盘文件上
             onPublish(datum, peers.local());
 
             final String content = JSON.toJSONString(json);
-
+            //将数据写入到其他节点
+            // 利用CountDownLatch实现了一个简单的raft协议，必须集群半数以上节点写入成功才会给客户端返回成功
             final CountDownLatch latch = new CountDownLatch(peers.majorityCount());
             for (final String server : peers.allServersIncludeMyself()) {
                 if (isLeader(server)) {
                     latch.countDown();
                     continue;
                 }
+                // 同步实例信息给其他节点
                 final String url = buildURL(server, API_ON_PUB);
                 HttpClient.asyncHttpPostLarge(url, Arrays.asList("key=" + key), content, new AsyncCompletionHandler<Integer>() {
                     @Override
@@ -295,6 +300,7 @@ public class RaftCore {
 
         // if data should be persistent, usually this is always true:
         if (KeyBuilder.matchPersistentKey(datum.key)) {
+            //同步写实例数据到文件
             raftStore.write(datum);
         }
 
@@ -313,6 +319,7 @@ public class RaftCore {
         }
         raftStore.updateTerm(local.term.get());
 
+        //异步任务。更新内存注册表
         notifier.addTask(datum.key, ApplyAction.CHANGE);
 
         Loggers.RAFT.info("data added/updated, key={}, term={}", datum.key, local.term);
