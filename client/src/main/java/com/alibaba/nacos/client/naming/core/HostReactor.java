@@ -334,6 +334,7 @@ public class HostReactor {
                 } else {
                     // if serviceName already updated by push, we should not override it
                     // since the push data may be different from pull through force push
+
                     refreshOnly(serviceName, clusters);
                 }
                 //10s一次pull请求们，获取最新服务端的地址列表
